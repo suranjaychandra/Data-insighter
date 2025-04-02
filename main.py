@@ -8,10 +8,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import google.generativeai as genai
-import pdfkit
 import time
 import os
 from dotenv import load_dotenv
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,8 +20,29 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
+# Function to generate PDF
+def generate_pdf(summary_text, file_name="Business_Report.pdf"):
+    c = canvas.Canvas(file_name, pagesize=letter)
+    width, height = letter
 
+    # Title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(100, height - 50, "Business Report - Data Insights")
+
+    # Content
+    c.setFont("Helvetica", 12)
+    text = c.beginText(100, height - 100)
+    text.setFont("Helvetica", 12)
+    text.setTextOrigin(100, height - 100)
+
+    for line in summary_text.split("\n"):
+        text.textLine(line)
+
+    c.drawText(text)
+    c.save()
+    return file_name
+
+# Streamlit UI setup
 st.set_page_config(page_title="AI-Powered Business Analytics", layout="wide")
 
 st.title("📊 Data Insighter")
@@ -99,7 +121,7 @@ if uploaded_file:
             st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
-    
+
     st.subheader("📝 AI-Generated Business Insights")
     st.write("Analyzing data for key takeaways...")
 
@@ -151,7 +173,7 @@ if uploaded_file:
             summary_html += f'<img src="data:image/png;base64,{base64_img}" style="width:100%; margin-bottom:20px;">'
 
         pdf_path = "Business_Report.pdf"
-        pdfkit.from_string(summary_html, pdf_path, configuration=PDFKIT_CONFIG)
+        generate_pdf(summary_text=summary_text, file_name=pdf_path)  # Generate PDF
 
         with open(pdf_path, "rb") as file:
             st.download_button("📥 Download Report", file, file_name="Business_Report.pdf", mime="application/pdf")
