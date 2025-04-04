@@ -5,3 +5,4 @@ pandas
 plotly-express
 google-generativeai
 pdfkit
+python-dotenv
